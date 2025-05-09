@@ -1,9 +1,10 @@
-from flask import  Blueprint, request, Response
-from .routes_utilities import validate_model
+from flask import  Blueprint, request, Response, abort, make_response
+from .routes_utilities import validate_model, create_model, get_models_with_filters
 from ..db import db
 from app.models.task import Task
 from datetime import datetime
-
+import os
+import requests
 
 tasks_bp = Blueprint("tasks_bp", __name__, url_prefix = "/tasks")
 
@@ -20,9 +21,7 @@ def get_all_tasks():
 
     tasks = db.session.scalars(query)
 
-    tasks_response = []
-    for task in tasks: 
-        tasks_response.append(task.to_dict())
+    tasks_response = [task.to_dict() for task in tasks]
 
     return tasks_response
 
@@ -38,8 +37,6 @@ def update_task(id):
 
     task.title = request_body["title"]
     task.description = request_body["description"]
-    # if task.is_completed:
-    #     task.complete_at = request_body["complete_at"]
 
     db.session.commit()
     return Response(status=204, mimetype="application/json")
@@ -77,18 +74,32 @@ def delete_task(id):
 @tasks_bp.post("")
 def post_new_task():
     request_body = request.get_json()
+    return create_model(Task, request_body)
 
-    if not request_body.get("title") or not request_body.get("description"):
-        return {"details":"Invalid data"}, 400
+    # try: 
+    #     new_task = Task.from_dict(request_body)
+    # except KeyError as error:
+    #     response = {"details": "Invalid data"}
+    #     abort(make_response(response, 400))
 
-    new_task = Task.from_dict(request_body)
+    # db.session.add(new_task)
+    # db.session.commit()
 
-    db.session.add(new_task)
-    db.session.commit()
+    # return make_response({"task": new_task.to_dict()}, 201)
 
-    return {"task": new_task.to_dict()}, 201
+def send_slack_msg(task_title):
+    token = os.environ.get("SLACK_API_TOKEN")
+    url = "https://slack.com/api/chat.postMessage"
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "channel": "task-notifications",
+        "text": f"Someone just completed the task {task_title}"
+    }
 
+    response = requests.post(url, headers=headers, json=data)
 
-    
-
-
+    if response.status_code != 200 or not response.json().get("ok"):
+        print("Slack API error:", response.text)

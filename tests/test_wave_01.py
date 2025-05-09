@@ -1,7 +1,7 @@
 from app.models.task import Task
 from app.db import db
 import pytest
-
+from app import create_app
 
 # @pytest.mark.skip(reason="No way to test this feature yet")
 def test_get_tasks_no_saved_tasks(client):
@@ -61,9 +61,7 @@ def test_get_task_not_found(client):
     # Assert
     assert response.status_code == 404
     assert response_body == {"message": "Task id 1 is not found."}
-    # *****************************************************************
-    # **Complete test with assertion about response body***************
-    # *****************************************************************
+
 
 
 # @pytest.mark.skip(reason="No way to test this feature yet")

@@ -2,7 +2,11 @@ from flask import Flask
 from .db import db, migrate
 from .models import task, goal
 from .routes.task_routes import tasks_bp
+from .routes.goal_routes import goals_bp
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 def create_app(config=None):
     app = Flask(__name__)
@@ -20,5 +24,8 @@ def create_app(config=None):
 
     # Register Blueprints here
     app.register_blueprint(tasks_bp)
+    app.register_blueprint(goals_bp)
 
     return app
+
+SLACK_API_TOKEN = os.environ.get("SLACK_API_TOKEN")
