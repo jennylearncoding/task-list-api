@@ -42,12 +42,14 @@ def update_task(id):
     return Response(status=204, mimetype="application/json")
 
 @tasks_bp.patch("/<id>/mark_complete")
-def is_completed(id):
+def mark_completed(id):
     task = validate_model(Task, id)
 
     task.completed_at = datetime.now()
 
     db.session.commit()
+
+    send_slack_msg(task_title=task.title)
 
     return Response(status=204, mimetype="application/json")
 
